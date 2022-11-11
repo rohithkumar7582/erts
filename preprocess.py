@@ -10,6 +10,7 @@ import streamlit_google_oauth as oauth
 from dotenv import load_dotenv
 
 
+
 import keras
 from  keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -26,9 +27,15 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
-from custom_weights import CustomModel
 
 from sklearn.model_selection import train_test_split
+from transformers import AutoTokenizer,TFBertModel
+from transformers import BertTokenizer, TFBertModel, BertConfig,TFDistilBertModel,DistilBertTokenizer,DistilBertConfig
+import tensorflow as tf
+from tensorflow.keras.layers import Input, Dense
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
 
 
 df = pd.read_csv('Emotion-Recognition-using-Text-with-Emojis-and-Speech/text_dataset/train.csv')
@@ -52,9 +59,30 @@ drawing = mp.solutions.drawing_utils
 custom_obj = {}
 custom_obj['sparse_weighted_loss'] = sparse_weighted_loss(target=1,output=5,weights=2376)'''
 
+max_len = 70
+ 
+input_ids = Input(shape=(max_len,), dtype=tf.int32, name="input_ids")
+input_mask = Input(shape=(max_len,), dtype=tf.int32, name="attention_mask")
+
+tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
+bert = TFBertModel.from_pretrained('bert-base-cased')
+
+embeddings = bert(input_ids,attention_mask = input_mask)[0] #(0 is the last hidden states,1 means pooler_output)
+out = tf.keras.layers.GlobalMaxPool1D()(embeddings)
+out = Dense(256, activation='relu')(out)
+out = tf.keras.layers.Dropout(0.1)(out)
+out = Dense(128, activation='relu')(out)
+out = tf.keras.layers.Dropout(0.1)(out)
+out = Dense(32,activation = 'relu')(out)
+#out = tf.keras.layers.Dropout(0.6)(out)
+y = Dense(5,activation = 'sigmoid')(out)
+    
+bert_model = tf.keras.Model(inputs=[input_ids, input_mask], outputs=y)
+bert_model.layers[2].trainable = True
+
 
 bilstm_model = load_model("Emotion-Recognition-using-Text-with-Emojis-and-Speech/model/bi-lstm.h5")
-bert_model = load_model("Emotion-Recognition-using-Text-with-Emojis-and-Speech/model/bert_model_04-11-2022.h5")
+bert_model.load_weights("Emotion-Recognition-using-Text-with-Emojis-and-Speech/model/bert_model.h5")
 speech_model = load_model("Emotion-Recognition-using-Text-with-Emojis-and-Speech/model/speech_model.h5")
 
 
@@ -62,7 +90,7 @@ X = train['text']
 bilstm_tokenizer=Tokenizer(15212,lower=True,oov_token='UNK')
 bilstm_tokenizer.fit_on_texts(X)
 
-encoded_dict  = {'anger':0,'fear':1, 'happy':2, 'neutral':3, 'sad':4}
+bert_encoded_dict  = {0:'anger',1:'fear', 2:'happy', 3:'neutral', 4:'sad'}
 bert_tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
 
 
@@ -99,8 +127,10 @@ def bert_preprocess(raw_text):
     return_token_type_ids = False,
     return_attention_mask = True,
     verbose = True) 
-    bert_emotion = bert_model.predict({'input_ids':x_val['input_ids'],'attention_mask':x_val['attention_mask']})*100
-    return bert_emotion
+    bert_emotion_val = bert_model.predict({'input_ids':x_val['input_ids'],'attention_mask':x_val['attention_mask']})*100
+    print(bert_emotion_val)
+    bert_emotion_key = np.argmax(bert_emotion_val)
+    return bert_encoded_dict[bert_emotion_key]
 
 def speech_preprocess(raw_speech):
     pass
