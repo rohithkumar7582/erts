@@ -89,4 +89,34 @@ if audio_record_btn:
 	st.write("audio button clicked")
 	st.write("Recording Started ...")
 	print("Starting: Speak now!")
-	#mahesh addition
+	audio_bytes = audio_recorder()
+
+
+	st.audio(audio_bytes, format="audio/wav")
+	st.session_state["run"] = "false"
+
+	start = st.button("Start")
+	stop = st.button("Stop")
+	#reset = st.button("Reset")
+	#download = st.button("Download")
+	if start and audio_record_btn:
+
+		fs = 44100  # this is the frequency sampling; also: 4999, 64000
+		#myrecording = sd.rec(int(fs*10),samplerate=fs, channels=2)
+		st.write("Recording Started ...")
+		print("Starting: Speak now!")
+		audio_bytes = audio_recorder()
+		#sd.wait()
+
+		if stop and audio_bytes:
+			st.write("Recording finished")
+			print("recording finished")
+			st.audio(audio_bytes, format="audio/wav")
+			#write(username+'_rec.wav', fs, myrecording)
+
+			#st.audio(myrecording, format='audio/wav', start_time=0)
+
+
+
+	
+

@@ -1,7 +1,5 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
-import av
-import cv2 
 import numpy as np 
 import mediapipe as mp 
 from keras.models import load_model
@@ -11,7 +9,6 @@ from dotenv import load_dotenv
 
 
 
-import keras
 from  keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import os
